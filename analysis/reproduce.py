@@ -94,6 +94,30 @@ def ratio_table(M, grades):
 adv5 = ratio_table(E5, range(0, 5))
 adv12 = ratio_table(ALL, range(0, 12))
 
+# dependence check for the Welch tests (Appendix A10 methods note)
+# Lag-1 autocorrelation of each ratio series around its own period mean (pairs taken within a period only).
+# Effective-sample-size Welch: n_eff = n (1 - rho) / (1 + rho), applied only when rho > 0 (negative
+# autocorrelation is not used to enlarge n). Permutation test: 20,000 relabelings of the 15 years.
+def welch_sensitivity(rows, seed=20261013, N=20000):
+    prng = np.random.default_rng(seed); out = []
+    for g, *_ , r in rows:
+        pre = np.array([r[yy] for yy in range(2010, 2020)]); po = np.array([r[yy] for yy in range(2022, 2027)])
+        e1, e2 = pre - pre.mean(), po - po.mean()
+        rho = (np.sum(e1[1:] * e1[:-1]) + np.sum(e2[1:] * e2[:-1])) / (np.sum(e1 ** 2) + np.sum(e2 ** 2))
+        pw = stats.ttest_ind(pre, po, equal_var=False).pvalue
+        f = (1 - max(rho, 0)) / (1 + max(rho, 0)); n1, n2 = 10 * f, 5 * f
+        v1, v2 = pre.var(ddof=1) / n1, po.var(ddof=1) / n2
+        t = (po.mean() - pre.mean()) / np.sqrt(v1 + v2)
+        dfw = (v1 + v2) ** 2 / (v1 ** 2 / (n1 - 1) + v2 ** 2 / (n2 - 1))
+        pn = 2 * stats.t.sf(abs(t), dfw)
+        y = np.r_[pre, po]; obs = abs(po.mean() - pre.mean()); hits = 0
+        for _ in range(N):
+            p = prng.permutation(y); hits += abs(p[10:].mean() - p[:10].mean()) >= obs - 1e-12
+        out.append((g, pre.mean(), po.mean(), rho, pw, pn, hits / N))
+    return out
+sens5 = welch_sensitivity(adv5)
+sens12 = welch_sensitivity(adv12, seed=20261014)
+
 # cohort tracking (A11)
 cohorts = [(k, E5.loc[k, 0], E5.loc[k + 5, 5]) for k in range(2009, 2022)]
 
@@ -162,6 +186,7 @@ lines = [
  ('Methods', H),
  ('Trends: ordinary least squares of headcount on year. Full-period trends (2009-2026) use Newey-West standard errors (Bartlett kernel, lag 2, small-sample factor n/(n-2)); segments of 2019 or later use ordinary standard errors. 95% intervals use the t distribution. Significance threshold p < 0.05, no multiple-comparison correction.', N_),
  ('Period comparisons of advancement ratios: Welch two-sample t-tests, 2010-2019 vs. 2022-2026 (2020 and 2021 COVID transitions excluded).', N_),
+ ('Dependence check: because each year can depend on the year before, the Welch tests were checked for serial correlation (Welch_sensitivity tab). Advancement ratios are year-over-year growth rates and show little serial correlation (average lag-1 autocorrelation -0.20 for K-5, -0.01 for K-12); an effective-sample-size adjustment leaves every K-5 result unchanged, and a permutation test agrees with Welch for every K-5 transition. Welch is therefore appropriate, with no correction applied.', N_),
  ('Model comparison: AIC = n ln(RSS/n) + 2k, k = number of fitted coefficients.', N_),
  ('Projections: cohort survival. K-5 bootstrap: 20,000 draws, each resampling a whole year of advancement ratios and adding 4% random variation to kindergarten (seed 20261012). K-12: deterministic, 2022-2026 mean ratios.', N_),
  ('', N_),
@@ -285,6 +310,40 @@ nxt = adv_block(4, 'K-5, 11 neighborhood schools (A10.1)', 'Data_K5', range(5), 
 adv_block(nxt + 1, 'K-12, all programs including ORLA (A10.2)', 'Data_AllPrograms', range(12),
           ['K to 1'] + [f'{g} to {g+1}' for g in range(1, 12)])
 widths(ws, [16] + [9] * 12)
+
+# Welch sensitivity (dependence check)
+ws = sheet('Welch_sensitivity', 'Dependence check for the Welch tests (Appendix A10 methods note)',
+           'Values from reproduce.py (permutation seeds 20261013 and 20261014). Question: does year-to-year dependence make the Welch p-values in Tables A10.1 and A10.2 unreliable?')
+notes = [
+ 'Why check: enrollment in one year depends on the year before, which is why full-period headcount trends use Newey-West standard errors. Welch corrects for unequal variances, not for dependence.',
+ 'Lag-1 autocorrelation: correlation of each ratio with the next year\'s ratio for the same transition, measured around each period\'s own mean (pairs within a period only).',
+ 'Effective-n Welch p: Welch recomputed with n_eff = n(1 - rho)/(1 + rho) when rho > 0; when rho <= 0 it equals the Welch p (negative autocorrelation is not used to enlarge n).',
+ 'Permutation p: share of 20,000 random relabelings of the 15 years whose before-after difference is at least as large as observed. It makes no normality or equal-variance assumption.',
+ 'Newey-West is not used here: with 15 observations it tends to understate standard errors, and with near-zero autocorrelation it offers no benefit.',
+]
+for i, t in enumerate(notes): put(ws, 3 + i, 1, t, NOTE)
+def sens_block(r0, title, rows, labels):
+    put(ws, r0, 1, title, H)
+    header(ws, r0 + 1, ['Transition', '2010-2019 mean', '2022-2026 mean', 'Lag-1 autocorrelation', 'Welch p (reported)', 'Effective-n Welch p', 'Permutation p'])
+    for i, (g, m1, m2, rho, pw, pn, pp) in enumerate(rows):
+        rr = r0 + 2 + i
+        put(ws, rr, 1, labels[i]); put(ws, rr, 2, m1, fmt='0.000'); put(ws, rr, 3, m2, fmt='0.000')
+        put(ws, rr, 4, rho, fmt='+0.00;-0.00'); put(ws, rr, 5, pw, fmt='0.00'); put(ws, rr, 6, pn, fmt='0.00'); put(ws, rr, 7, pp, fmt='0.00')
+    rr = r0 + 2 + len(rows)
+    put(ws, rr, 1, 'Average', H); put(ws, rr, 4, f'=AVERAGE(D{r0+2}:D{rr-1})', H, fmt='+0.00;-0.00')
+    return rr + 2
+r = sens_block(9, 'K-5, 11 neighborhood schools (Table A10.1)', sens5, ['K to 1', '1 to 2', '2 to 3', '3 to 4', '4 to 5'])
+r = sens_block(r, 'K-12, all programs including ORLA (Table A10.2)', sens12, ['K to 1'] + [f'{g} to {g+1}' for g in range(1, 12)])
+put(ws, r, 1, 'Conclusion', H)
+concl = [
+ 'Advancement ratios are growth rates, so they carry little of the year-to-year persistence seen in headcounts; most autocorrelations are near zero or negative, which if anything makes Welch slightly conservative.',
+ 'Every K-5 result is unchanged by the effective-n adjustment, and the permutation test agrees with Welch. No K-5 transition changed significantly after COVID, and four of five are slightly higher.',
+ f'One exception, which the report does not rely on: 11 to 12 in K-12 has strong positive autocorrelation ({sens12[11][3]:+.2f}); its Welch p of {sens12[11][4]:.2f} rises to about {sens12[11][5]:.2f} after adjustment. With 17 tests in the two tables, one p near 0.01 is about what chance alone would produce.',
+ f'In K-12, the permutation test gives a lower p for 5 to 6 ({sens12[5][6]:.2f}, against Welch {sens12[5][4]:.2f}), pointing the same way as the report: classes grow at 6th grade since COVID. The report states that growth as a measured figure and does not rest on either test.',
+ 'With 10 and 5 years per period these tests detect only large changes, so a non-significant result means no detectable change, not proof of equality.',
+]
+for i, t in enumerate(concl): put(ws, r + 1 + i, 1, t)
+widths(ws, [16, 15, 15, 14, 14, 14, 14])
 
 # Cohorts
 ws = sheet('Cohorts', 'Kindergarten classes tracked to 5th grade (Table A11.1)', 'Formulas reference Data_K5.')
@@ -461,7 +520,7 @@ widths(ws, [44, 10, 12, 10])
 
 # Checks
 ws = sheet('Checks', 'Reported figures compared with reproduced values',
-           'MATCH = reproduced exactly at the report\'s precision. ROUNDING = differs only by rounding. Checked against the final report of Oct. 12, 2026.')
+           'MATCH = reproduced exactly at the report\'s precision. ROUNDING = differs only by rounding. Checked against the final report as updated Oct. 13, 2026.')
 header(ws, 4, ['Report location', 'Item', 'Report says', 'Reproduced', 'Status', 'Note'])
 checks = [
  ('Table A5.1', 'K-5 headcount by grade, 2009-2026', 'as printed', 'identical, all 108 cells', 'MATCH', ''),
@@ -473,6 +532,8 @@ checks = [
  ('Table A6.1 / Table 3', 'R² and AIC for all seven models; free cycle length 15.1 years', 'as printed', 'identical', 'MATCH', 'AIC = n ln(RSS/n) + 2k'),
  ('Table A6.1, cycle models', 'Implied low points', '15-yr 2041; 20-yr 2029; 25-yr 2032; 30-yr 2036', 'identical', 'MATCH', 'Low points include the fitted trend (corrected Oct. 12; an earlier draft gave 2045 for the 20-year model)'),
  ('Tables A10.1, A10.2', 'Advancement ratio means, SDs, Welch p', 'as printed', 'identical', 'MATCH', '2021 K-to-1 ratio 1.036 (K-5)'),
+ ('Appendix A10, methods note', 'Dependence check for Welch tests', 'average lag-1 autocorrelation -0.20 (K-5), -0.01 (K-12); every K-5 result unchanged', f'{np.mean([x[3] for x in sens5]):+.2f} and {np.mean([x[3] for x in sens12]):+.2f}; K-5 effective-n p identical to Welch', 'MATCH', 'See Welch_sensitivity tab; permutation test agrees'),
+ ('Enrollment, "Families join at every grade"', 'K to 1 ratio before and after COVID', '1.053 before, 1.069 after; no significant change; most slightly higher', 'identical (4 of 5 K-5 transitions higher)', 'MATCH', 'Wording changed Oct. 13 from "the same as before COVID"'),
  ('Table A11.1', 'Cohort growth K to 5', 'as printed', 'identical', 'MATCH', ''),
  ('Table A8.1', 'Bootstrap medians and intervals', 'as printed', 'within 1-3 students', 'ROUNDING', 'Simulation noise; this file fixes the random seed so reruns are identical'),
  ('Table A8.2', 'K-12 projections', 'as printed', 'identical', 'MATCH', 'Middle school -12.8% by 2033, high school -11.4% by 2034, K-12 -9.7% by 2034 (body: 13%, 11%, 10%)'),

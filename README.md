@@ -25,7 +25,7 @@ You do not need a GitHub account to read or download anything here. Everything b
 | `OSD_Closure_Community_Analysis.pdf` | The full report (version of record) |
 | `OSD_Closure_Fact_Sheet.pdf` | Two-page fact sheet |
 | `data/` | District enrollment data, 2009-10 to 2026-27, compiled from the OSD enrollment dashboard (see `data/README.md`) |
-| `analysis/OSD_Statistical_Analyses.xlsx` | Every number in Appendix A, with live formulas where possible and a Checks tab comparing each reported figure with the reproduced value |
+| `analysis/OSD_Statistical_Analyses.xlsx` | Every number in Appendix A, with live formulas where possible, a Checks tab comparing each reported figure with the reproduced value, and a dependence check for the Welch tests (Welch_sensitivity tab) |
 | `analysis/reproduce.py` | The code that recomputes every statistical result from `data/` and writes the workbook |
 | `sources/` | District documents that are no longer posted by the district and were recovered from archived copies |
 | `tools/` | The script and styles that build the web page |
