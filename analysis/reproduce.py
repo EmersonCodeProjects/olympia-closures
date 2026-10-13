@@ -169,7 +169,7 @@ lines = [
  ('September headcount for school and grade analyses; annual average of monthly counts for district totals. Stray entries of 0-3 students listed in grades outside a file\'s range (4th-5th in the middle school file, 7th-8th in the high school file) are omitted. 2026-27 has only a September count and is provisional.', N_),
  ('', N_),
  ('Checks tab', H),
- ('Lists each reported figure, the reproduced value, and whether they match. Items marked REVIEW are differences to correct in the report.', N_),
+ ('Lists each reported figure, the reproduced value, and whether they match. All items match the final report or differ only by rounding.', N_),
 ]
 for i, (txt, f) in enumerate(lines, 1):
     c = ws.cell(i, 1, txt); c.font = f; c.alignment = Alignment(wrap_text=True, vertical='top')
@@ -461,19 +461,17 @@ widths(ws, [44, 10, 12, 10])
 
 # Checks
 ws = sheet('Checks', 'Reported figures compared with reproduced values',
-           'MATCH = reproduced exactly at the report\'s precision. ROUNDING = differs only by rounding. REVIEW = a correction is needed in the report.')
+           'MATCH = reproduced exactly at the report\'s precision. ROUNDING = differs only by rounding. Checked against the final report of Oct. 12, 2026.')
 header(ws, 4, ['Report location', 'Item', 'Report says', 'Reproduced', 'Status', 'Note'])
 checks = [
  ('Table A5.1', 'K-5 headcount by grade, 2009-2026', 'as printed', 'identical, all 108 cells', 'MATCH', ''),
  ('Table A7.1', 'District annual average and September headcount', 'as printed', 'identical', 'MATCH', ''),
  ('Table A5.2', 'All eight trend rows', 'as printed', 'identical (slope, CI, p, R²)', 'MATCH', 'Kindergarten 2020-26 p = 0.0006, reported <0.001'),
  ('Table 4', 'All school trends, shares, combined rows', 'as printed', 'identical', 'MATCH', 'Closing vs. other 8 (p = 0.78) is the trend in the closing schools\' share of K-5 enrollment, Newey-West SE'),
- ('Table A7.2, row 1', 'District trend 2009-10 to 2025-26', '+26.8 (-1.6 to +55.1), p = 0.063', '+26.8 (-6.6 to +60.2), p = 0.108 with Newey-West SE', 'REVIEW',
-  'The report printed ordinary standard errors here, but its Methods say full-period trends use Newey-West. Conclusion unchanged (not significant either way).'),
+ ('Table A7.2, row 1', 'District trend 2009-10 to 2025-26', '+26.8 (-6.6 to +60.2), p = 0.108', '+26.8 (-6.6 to +60.2), p = 0.108', 'MATCH', 'Newey-West SE, as for all full-period trends (corrected Oct. 12 from an earlier draft that printed ordinary SE)'),
  ('Table A7.2, rows 2-5', 'District trends by period', 'as printed', 'identical', 'MATCH', ''),
  ('Table A6.1 / Table 3', 'R² and AIC for all seven models; free cycle length 15.1 years', 'as printed', 'identical', 'MATCH', 'AIC = n ln(RSS/n) + 2k'),
- ('Table A6.1, 20-year cycle', 'Implied low point', 'about 2045', 'about 2029 (then 2049)', 'REVIEW',
-  'With the fitted trend included, the 20-year model bottoms out about 2029. The body text "moves the predicted low point anywhere from 2032 to 2045" should read "from 2029 to 2036". The 15-, 25-, and 30-year low points (2041, 2032, 2036) reproduce.'),
+ ('Table A6.1, cycle models', 'Implied low points', '15-yr 2041; 20-yr 2029; 25-yr 2032; 30-yr 2036', 'identical', 'MATCH', 'Low points include the fitted trend (corrected Oct. 12; an earlier draft gave 2045 for the 20-year model)'),
  ('Tables A10.1, A10.2', 'Advancement ratio means, SDs, Welch p', 'as printed', 'identical', 'MATCH', '2021 K-to-1 ratio 1.036 (K-5)'),
  ('Table A11.1', 'Cohort growth K to 5', 'as printed', 'identical', 'MATCH', ''),
  ('Table A8.1', 'Bootstrap medians and intervals', 'as printed', 'within 1-3 students', 'ROUNDING', 'Simulation noise; this file fixes the random seed so reruns are identical'),
@@ -482,10 +480,10 @@ checks = [
  ('Table A3.1, Table 7', 'Attrition and enrollment-loss scenarios', 'as printed', 'identical', 'MATCH', ''),
  ('Table 8', 'Custodial cost and net savings', '-0.24 / -0.38; net 1.99 / 1.32', '-0.23 / -0.37; net 2.00 / 1.33', 'ROUNDING', '43 rooms x 0.5-0.8 h / 8 h = 2.7-4.3 FTE x $86,744 = $233K-373K; the report rounds to $235K-375K'),
  ('Table 15 / Appendix A2', 'Reserve paths', 'as printed', 'identical to 0.1 point', 'MATCH', ''),
- ('Appendix A2, "Reserve projection by option"', 'Prior-year spending list', '$295.67, $202.93, $207.89, and 212.52 million', '$195.67, $202.93, $207.89, and $212.52 million', 'REVIEW', 'Typo; also "(0.41, $0.37" is missing a "$"'),
+ ('Appendix A2, "Reserve projection by option"', 'Prior-year spending list', '$195.67, $202.93, $207.89, 212.52 million', 'identical', 'MATCH', ''),
  ('Table 10 / A12', 'Planning and functional capacity, utilization at 22 per room', 'as printed', 'identical', 'MATCH', ''),
- ('Capacity text and finding 5', 'Sensitivity at 24 students per room', 'Centennial and Garfield about 94%; Pioneer and Roosevelt about 88%', 'about 92-93% and about 87%', 'REVIEW',
-  'Recomputed from room counts (special education rooms stay at 10). Finding 5 should read "about 92-102%" and "about 87-96%". At 21 per room: 99-106%, so "at or over capacity" holds.'),
+ ('Capacity text and finding 5', 'Sensitivity at 24 students per room', 'Centennial and Garfield about 92%; Pioneer and Roosevelt about 87%', 'Centennial 92.9%, Garfield 92.1%; Pioneer 87.1%, Roosevelt 87.2%', 'ROUNDING',
+  'Special education rooms stay at 10 students. At 21 per room: 99-106%, so "at or over capacity" holds.'),
  ('Appendix A12', 'Planning seats after closures', '3,970', 'about 3,985 from room counts', 'ROUNDING', 'Utilization 82% either way'),
  ('Appendix A3', 'Payroll, LAP share, Hansen averages, birth ratios', 'as printed', 'identical', 'MATCH', ''),
 ]
