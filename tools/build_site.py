@@ -102,6 +102,7 @@ page = f'''<title>Olympia Elementary Closures Analysis</title>
   <main id="main">
     <section class="hero">
       <p class="eyebrow">Independent analysis · Olympia School District · {html.escape(date.group(1) if date else '')}</p>
+      <p class="update"><strong>Update, Oct. 20:</strong> <a href="OSD_Enrollment_Addendum_Oct22.pdf">Addendum on the district’s Oct. 22 enrollment review</a> <small>PDF</small>. The report below is unchanged.</p>
       <h1>The proposal to close McKenny, Madison, and LP Brown</h1>
       <p class="thesis">Recruitment, not closure, is the answer.</p>
       <p class="byline">By {html.escape(author)} · Community analysis, version 1.0</p>
@@ -114,6 +115,7 @@ page = f'''<title>Olympia Elementary Closures Analysis</title>
       <div class="downloads">
         <a class="dl primary" href="OSD_Closure_Community_Analysis.pdf">Full report <small>PDF</small></a>
         <a class="dl" href="OSD_Closure_Fact_Sheet.pdf">Two-page fact sheet <small>PDF</small></a>
+        <a class="dl" href="OSD_Enrollment_Addendum_Oct22.pdf">Oct. 22 enrollment addendum <small>PDF</small></a>
         <a class="dl" href="analysis/OSD_Statistical_Analyses.xlsx">Statistics workbook <small>Excel</small></a>
         <a class="dl" href="https://github.com/EmersonCodeProjects/olympia-closures">Data and code <small>GitHub</small></a>
       </div>

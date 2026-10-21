@@ -118,3 +118,7 @@ p.caption strong { color: var(--ink); font-weight: 700; }
 .foot { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--rule); font-family: var(--font-ui); font-size: 0.82rem; color: var(--muted); }
 
 .facts .nw { white-space: nowrap; }
+
+.update { margin: 0 0 18px; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--surface); font-size: 0.95rem; }
+.update a { color: var(--accent); font-weight: 600; }
+.update small { color: var(--muted); }
